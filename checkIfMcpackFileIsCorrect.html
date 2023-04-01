@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>上传.mcpack文件</title>
+    <meta charset="UTF-8">
+    <!-- 引入Bootstrap框架 -->
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.6.0/css/bootstrap.min.css">
+    <!-- 引入Font Awesome图标库 -->
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="row mt-5 justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title text-center">.mcpack基础错误检查器</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="mcpack"><i class="fas fa-file-archive"></i> 请选择一个.mcpack文件上传。 </label>
+                            <input type="file" id="mcpack" name="mcpack" class="form-control-file">
+                        </div>
+                        <button class="btn btn-primary btn-block" onclick="checkFile();"><i class="fas fa-upload"></i> 检查</button>
+
+                    </div>
+                    <div class="card-footer">
+                        <div class="alert alert-primary" role="alert" id="result" style="display: none;">
+                            <i class="fas fa-info-circle"></i> <span id="result-text"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入JSZip库 -->
+    <script src="https://cdn.jsdelivr.net/npm/jszip/dist/jszip.min.js"></script>
+    <script>
+async function checkFile() {
+    const fileInput = document.getElementById("mcpack");
+    const file = fileInput.files[0];
+    if (!file) {
+        showResult(false, "请选择一个.mcpack文件");
+        return;
+    }
+    const zip = new JSZip();
+    try {
+        const contents = await zip.loadAsync(file);
+        const illegalChars = /[^a-zA-Z0-9 ~!@#$%^&*()_+\-=[\]{}|;:'",./<>?]/;
+        let hasManifest = false;
+        for (const filename in contents.files) {
+            if (illegalChars.test(filename)) {
+                showResult(false, "出现了除英文和常用符号外的字符（如中文），这样会导致.mcpack文件上传失败。");
+                return;
+            }
+            if (filename === "manifest.json") {
+                hasManifest = true;
+                const manifest = JSON.parse(await contents.files[filename].async("string"));
+                const validUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                if (!validUUID.test(manifest.header.uuid)) {
+                    showResult(false, "该文件中manifest.json的UUID有误。");
+                    return;
+                }
+            } else if (filename === "pack_icon.png") {
+                hasIcon = true;
+            }
+        }
+        if (!hasManifest) {
+            showResult(false, "该文件中没有manifest.json(可能并非.mcpack文件)");
+            return;
+        }
+        if (!hasIcon) {
+            showResult(true, "没有发现pack_icon.png!");
+        } else {
+            showResult(true, "您上传的文件无误！");
+        }
+    } catch (error) {
+        showResult(false, "文件格式不正确或解析失败");
+    }
+}
+
+
+        function showResult(success, text) {
+            const result = document.getElementById("result");
+            const resultText = document.getElementById("result-text");
+            resultText.textContent = text;
+            if (success) {
+                result.classList.replace("alert-danger", "alert-success");
+            } else {
+                result.classList.replace("alert-primary", "alert-danger");
+            }
+            result.style.display = "";
+        }
+    </script>
+</body>
+<footer>
+    <style>
+        footer {
+  background-color: #f8f9fa;
+  padding: 30px 0;
+  font-size: 16px;
+  color: #6c757d;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+}
+
+footer p {
+  margin: 0;
+  padding: 0;
+}
+
+footer a {
+  color: #6c757d;
+  text-decoration: none;
+}
+
+footer a:hover {
+  color: #343a40;
+}
+
+    </style>
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6">
+            <p><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener" data-v-3720d8b6="">晋ICP备2021015650号-1</a></p>
+            <p>Fanconma Made By</p>
+        </div>
+        <div class="col-md-6 text-right">
+          <p>注：该网页的一切功能(包括界面)实现均由ChatGPT完成，有兴趣可以F12看一下代码φ(゜▽゜*)♪</p>
+          <p>该网页仍不完善，后续会逐步通过ChatGPT完善:D 看看他最终能自己做出个什么东西来</p>
+        </div>
+      </div>
+    </div>
+  </footer>
+  
+</html>
